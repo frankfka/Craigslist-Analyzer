@@ -15,10 +15,12 @@ def makeRequest(link):
 
 def getPostInformation(post_html):
     price = float(str(post_html.find('span', attrs={'class': 'result-price'}).text).replace("$", ""))
-    title = str(post_html.find('a', attrs={'class': 'result-title'}).text)
+    heading = post_html.find('a', attrs={'class': 'result-title'})
+    link = heading['href']
+    title = heading.text
     has_image = post_html.find('a', attrs={'class': 'empty'}) is None
     time_posted = datetime.datetime.strptime(post_html.find('time')['datetime'], "%Y-%m-%d %H:%M")
-    return {'title': title, 'price': price, 'has_image': has_image, 'time_posted': time_posted}
+    return {'title': title, 'link': link, 'price': price, 'has_image': has_image, 'time_posted': time_posted}
 
 def parseAllPostsForQueryLink(page_link):
     # Make request and parse with bs4
@@ -43,8 +45,7 @@ def parseAllPostsForQueryLink(page_link):
 def getDataForQuery(query_link):
     return pd.DataFrame(parseAllPostsForQueryLink(query_link))
 
-main_link = "https://vancouver.craigslist.org/search/sss?query=macbook+pro+13&sort=rel&min_price=900&max_price=1300"
-getDataForQuery(main_link).to_csv('test.csv', index=False)
+
 
 
 
