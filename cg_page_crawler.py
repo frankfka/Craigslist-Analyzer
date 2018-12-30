@@ -43,7 +43,11 @@ def parseAllPostsForQueryLink(page_link):
         return parsedInfoList
 
 def getDataForQuery(query_link):
-    return pd.DataFrame(parseAllPostsForQueryLink(query_link)).set_index('link')
+    try: 
+        return pd.DataFrame(parseAllPostsForQueryLink(query_link)).set_index('link')
+    except Exception as e:
+        print("Error: " + str(e))
+        return None
 
 
 
