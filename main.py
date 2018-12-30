@@ -15,12 +15,16 @@ cachedAnalysisDict = {"source_link": links_to_follow, "average_price": np.zeros(
 cachedRawDataDict = {}
 analysisCache = pd.DataFrame(cachedAnalysisDict).set_index('source_link')
 
+# Initialize cache
+for link in links_to_follow:
+    cachedRawDataDict[link] = None
+
 while(True):
 
     # Useful stuff to email
     relevantPostingsDict = {}
     print("Looping Again. Current time:")
-    print(datetime.datetime.now)
+    print(datetime.datetime.now())
 
     for link in links_to_follow:
         new_dataframe = crawler.getDataForQuery(link)
@@ -28,15 +32,15 @@ while(True):
 
         # Don't do anything if current retrieval failed
         if new_dataframe is not None:
-            print('New Dataframe is not None')
 
             # Compare if there is a cache
             if old_dataframe is not None:
-                print('Old Dataframe is not None')
-                new_listings = analyzer.getNewPostings(old_dataframe, new_dataframe)
+                last_checked = analysisCache.loc[link,'time_checked']
+                new_listings = analyzer.getNewPostings(old_dataframe, new_dataframe, last_checked)
                 cached_avg_price = analysisCache.loc[link, 'average_price']
-                print(new_listings)
-                print(new_listings.loc[new_listings['price'] < float(cached_avg_price)])
+                if not new_listings.empty:
+                    print(new_listings)
+                    print(new_listings.loc[new_listings['price'] < float(cached_avg_price)])
 
             # Update old values
             avg_price = analyzer.getAveragePrice(new_dataframe)
@@ -44,8 +48,7 @@ while(True):
             cachedRawDataDict[link] = new_dataframe
             analysisCache.loc[[link], ['min_price']] = min_price
             analysisCache.loc[[link], ['average_price']] = avg_price
-            print('Analysis Cache')
-            print(analysisCache)
+            analysisCache.loc[[link], ['time_checked']] = datetime.datetime.now()
 
     # Sleep for a bit!
     time.sleep(120)
