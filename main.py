@@ -25,7 +25,7 @@ while(True):
     # Useful stuff to email
     relevant_postings = []
 
-    print("/////////////////////////////////////////////////////")
+    print("\n\n/////////////////////////////////////////////////////")
     print("Crawling Craigslist. Current time:")
     print(datetime.datetime.now())
 
@@ -49,7 +49,7 @@ while(True):
                 cached_avg_price = float(analysisCache.loc[link, 'average_price'])
                 cached_min_price = float(analysisCache.loc[link, 'min_price'])
 
-                for index, row in new_listings:
+                for index, row in new_listings.iterrows():
                     print('************** \nNEW LISTING: ' + str(index))
 
                     if row['price'] < cached_avg_price:
@@ -76,6 +76,6 @@ while(True):
         email.send_gmail(email_string)
 
     # Sleep for a bit!
-    time.sleep(1200)
+    time.sleep(600)
 
     # TODO save current data to a csv
