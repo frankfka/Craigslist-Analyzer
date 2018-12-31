@@ -4,10 +4,11 @@ import numpy as np
 import pandas as pd
 import datetime
 import time
+import cg_email_notification as email
 
 # TODO parse from a csv
 # TODO parse the parameters and sort by date?
-links_to_follow = ["https://vancouver.craigslist.org/search/sss?query=macbook+pro+13&sort=rel&min_price=900&max_price=1300"]
+links_to_follow = ["https://vancouver.craigslist.org/search/sss?sort=date&max_price=1000&min_price=300&query=iphone%20x", "https://vancouver.craigslist.org/search/sss?query=lg+g7&sort=date&min_price=300&max_price=600", "https://vancouver.craigslist.org/search/sss?query=galaxy+s9&sort=date&min_price=200&max_price=600", "https://vancouver.craigslist.org/search/sss?query=pixel+2+xl&sort=date&min_price=200&max_price=500", "https://vancouver.craigslist.org/search/sss?query=ipad+pro&sort=date&min_price=300&max_price=550", "https://vancouver.craigslist.org/search/sss?query=airpods&sort=date&min_price=150&max_price=200"]
 num_links = len(links_to_follow)
 
 # Cached data
@@ -22,11 +23,16 @@ for link in links_to_follow:
 while(True):
 
     # Useful stuff to email
-    relevantPostingsDict = {}
-    print("Looping Again. Current time:")
+    relevant_postings = []
+
+    print("/////////////////////////////////////////////////////")
+    print("Crawling Craigslist. Current time:")
     print(datetime.datetime.now())
 
+    # Iterate through links to search
     for link in links_to_follow:
+
+        # Retrieve newest data and cached data
         new_dataframe = crawler.getDataForQuery(link)
         old_dataframe = cachedRawDataDict[link]
 
@@ -35,12 +41,24 @@ while(True):
 
             # Compare if there is a cache
             if old_dataframe is not None:
-                last_checked = analysisCache.loc[link,'time_checked']
-                new_listings = analyzer.getNewPostings(old_dataframe, new_dataframe, last_checked)
-                cached_avg_price = analysisCache.loc[link, 'average_price']
-                if not new_listings.empty:
-                    print(new_listings)
-                    print(new_listings.loc[new_listings['price'] < float(cached_avg_price)])
+
+                # Find which listings are newly posted
+                new_listings = analyzer.getNewPostings(old_dataframe, new_dataframe)
+
+                # Find cached analysis values
+                cached_avg_price = float(analysisCache.loc[link, 'average_price'])
+                cached_min_price = float(analysisCache.loc[link, 'min_price'])
+
+                for index, row in new_listings:
+                    print('************** \nNEW LISTING: ' + str(index))
+
+                    if row['price'] < cached_avg_price:
+                        print("Lower than average price")
+                    if row['price'] < cached_min_price:
+                        print("Lower than minimum price")
+                        
+                        # Add these to email list
+                        relevant_postings.append(index)
 
             # Update old values
             avg_price = analyzer.getAveragePrice(new_dataframe)
@@ -50,9 +68,14 @@ while(True):
             analysisCache.loc[[link], ['average_price']] = avg_price
             analysisCache.loc[[link], ['time_checked']] = datetime.datetime.now()
 
-    # Sleep for a bit!
-    time.sleep(120)
+    # Send off the email
+    email_string = ""
+    for posting in relevant_postings:
+        email_string = email_string + str(posting) + "\n"
+    if email_string:
+        email.send_gmail(email_string)
 
-    # TODO email link if new posting comes up with price lower than min price
+    # Sleep for a bit!
+    time.sleep(1200)
 
     # TODO save current data to a csv

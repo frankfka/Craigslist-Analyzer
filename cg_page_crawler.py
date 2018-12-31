@@ -11,7 +11,7 @@ header = {
 }
 
 def makeRequest(link):
-    return requests.get(link, headers=header)
+    return requests.get(link, headers=header, timeout=10)
 
 def getPostInformation(post_html):
     price = float(str(post_html.find('span', attrs={'class': 'result-price'}).text).replace("$", ""))
@@ -36,7 +36,7 @@ def parseAllPostsForQueryLink(page_link):
     next_page = str(html.find('a', attrs={'class': 'next'})['href'])
     if next_page:
         # Wait a bit before next pull
-        time.sleep(randint(1,3))
+        time.sleep(randint(5,10))
         next_page_link = page_link[:page_link.find('.org') + 4] + next_page
         return parsedInfoList + parseAllPostsForQueryLink(next_page_link)
     else:
