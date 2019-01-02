@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import datetime
 import time
+import re
 import cg_email_notification as email
 
-# TODO parse from a csv
 # TODO parse the parameters and sort by date?
 links_to_follow = ["https://vancouver.craigslist.org/search/sss?sort=date&max_price=1000&min_price=300&query=iphone%20x", "https://vancouver.craigslist.org/search/sss?query=lg+g7&sort=date&min_price=300&max_price=600", "https://vancouver.craigslist.org/search/sss?query=galaxy+s9&sort=date&min_price=200&max_price=600", "https://vancouver.craigslist.org/search/sss?query=pixel+2+xl&sort=date&min_price=200&max_price=500", "https://vancouver.craigslist.org/search/sss?query=ipad+pro&sort=date&min_price=300&max_price=550", "https://vancouver.craigslist.org/search/sss?query=airpods&sort=date&min_price=150&max_price=200"]
 num_links = len(links_to_follow)
@@ -15,6 +15,10 @@ num_links = len(links_to_follow)
 cachedAnalysisDict = {"source_link": links_to_follow, "average_price": np.zeros(num_links), "min_price": np.zeros(num_links), "time_checked": [datetime.datetime.now()]*num_links} 
 cachedRawDataDict = {}
 analysisCache = pd.DataFrame(cachedAnalysisDict).set_index('source_link')
+
+# Helper function to get the file name
+def getFileName(link):
+    return 'data/' + re.sub(r'\W+', '', link[link.find('.org') + 4:]) + '.csv'
 
 # Initialize cache
 for link in links_to_follow:
@@ -31,6 +35,8 @@ while(True):
 
     # Iterate through links to search
     for link in links_to_follow:
+
+        print("****\nAnalyzing: " + link)
 
         # Retrieve newest data and cached data
         new_dataframe = crawler.getDataForQuery(link)
@@ -49,16 +55,33 @@ while(True):
                 cached_avg_price = float(analysisCache.loc[link, 'average_price'])
                 cached_min_price = float(analysisCache.loc[link, 'min_price'])
 
+                print('Cached Avg Price: ' + str(cached_avg_price))
+                print('Cached Min Price: ' + str(cached_min_price))
+
+                # Get historical data from csv
+                historical_data = pd.read_csv(getFileName(link), index_col=0)
+
                 for index, row in new_listings.iterrows():
-                    print('************** \nNEW LISTING: ' + str(index))
+                    print('**\nNEW LISTING: ' + str(index))
+                    historical_data = historical_data.append(row)
 
                     if row['price'] < cached_avg_price:
                         print("Lower than average price")
-                    if row['price'] < cached_min_price:
-                        print("Lower than minimum price")
                         
                         # Add these to email list
                         relevant_postings.append(index)
+                        
+                    if row['price'] < cached_min_price:
+                        print("Lower than minimum price")
+                        
+                
+                # Save historical data with the new postings
+                historical_data.to_csv(getFileName(link))
+
+            else:
+                # No cache, so need to save a new file
+                # Simplest file name is to just take the alphanumeric characters from the link following the .org
+                new_dataframe.to_csv(getFileName(link))
 
             # Update old values
             avg_price = analyzer.getAveragePrice(new_dataframe)
@@ -78,4 +101,4 @@ while(True):
     # Sleep for a bit!
     time.sleep(600)
 
-    # TODO save current data to a csv
+
