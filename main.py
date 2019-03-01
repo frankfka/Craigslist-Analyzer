@@ -7,8 +7,10 @@ import time
 import re
 import cg_email_notification as email
 
-# TODO parse the parameters and sort by date?
-links_to_follow = ["https://vancouver.craigslist.org/search/sss?sort=date&max_price=1000&min_price=300&query=iphone%20x", "https://vancouver.craigslist.org/search/sss?query=lg+g7&sort=date&min_price=300&max_price=600", "https://vancouver.craigslist.org/search/sss?query=galaxy+s9&sort=date&min_price=200&max_price=600", "https://vancouver.craigslist.org/search/sss?query=pixel+2+xl&sort=date&min_price=200&max_price=500", "https://vancouver.craigslist.org/search/sss?query=ipad+pro&sort=date&min_price=300&max_price=550", "https://vancouver.craigslist.org/search/sss?query=airpods&sort=date&min_price=150&max_price=200"]
+links_to_follow = []
+with open('links_to_track.csv','r') as csv:
+    links_to_follow = csv.readlines()
+links_to_follow = [link.strip() for link in links_to_follow]
 num_links = len(links_to_follow)
 
 # Cached data
@@ -65,8 +67,9 @@ while(True):
                     print('**\nNEW LISTING: ' + str(index))
                     historical_data = historical_data.append(row)
 
-                    if row['price'] < cached_avg_price:
-                        print("Lower than average price")
+                    # Only keep listings that are 90% of the avg cached price
+                    if row['price'] < cached_avg_price * 0.9:
+                        print("Lower than 0.9 of average price")
                         
                         # Add these to email list
                         relevant_postings.append(index)
